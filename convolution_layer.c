@@ -10,24 +10,12 @@ typedef struct _conv_mask
 
 }conv_mask;
 
-typedef struct _convolution_layer
-{
-    int in_rows;
-    int in_columns;
-    int step;
-    int reduse;// 0-not, 1-yes
-    int outSize;
-    int mask_count;
-    double* mask;
-    double* intermediate;
-    double* out_arr;
-
-}convolution_layer;
-
-convolution_layer* newConvolutionLayer(int, int, int, int, int, int);
-void doConvolution(convolution_layer*, double*);
 conv_mask* getConvolutionMasks();
 conv_mask* makeNewMask(int, int, int);
+void freeMask(conv_mask*);
+int getMasksCount(conv_mask*);
+
+
 
 convolution_layer* newConvolutionLayer
 (int in_rows, int in_columns, int mask_rows, int mask_columns, int step, int reduse)
@@ -70,9 +58,67 @@ convolution_layer* newConvolutionLayer
 
 }
 
-void doConvolution(convolution_layer* conv_layer, double* in_arr)
+void doConvolution(convolution_layer* layer)
 {
+    int res_rows, res_columns, i, j, n, m, k=0;
+    conv_mask* cur_mask = layer->mask;
+
+    res_rows = (layer->in_rows + cur_mask->rows/2 + cur_mask->rows/2)/layer->step;
+    res_columns = (layer->in_columns + cur_mask->columns/2 + cur_mask->columns/2)/layer->step;
+
+    while (cur_mask != NULL)
+    {
+        for(i = -(cur_mask->rows)/2;i < layer->in_rows + (cur_mask->rows)/2;i+=layer->step){
+            for(j = -(cur_mask->columns)/2;j < layer->in_columns + (cur_mask->columns)/2;j+=layer->step){
+
+                if(i>=0 && j>=0 && i<res_rows && j<res_columns){
+                    layer->intermediate[i*res_columns+j] = 0.0;
+                }
+
+                for(n=0;n<cur_mask->rows;n++){
+                    for(m=0;m<cur_mask->columns;m++){
+                        if(i+n>=0 && j+m>=0 && i+n<res_rows && j+m<res_columns){
+                            layer->intermediate[(i+k)*res_columns+j]+= layer->in_arr[i*layer->in_columns+j] * cur_mask->mask[n*cur_mask->columns+m];
+                        }
+                    }
+                }
+                
+            }
+        }
+
+        cur_mask = cur_mask->next;
+        k += res_columns*res_rows;
+    }
+
+    if(layer->reduse == 0) return;
     
+    k=0;
+    res_rows /= 2;
+    res_columns /= 2;
+
+    while (cur_mask != NULL)
+    {
+        for(i = 0;i < layer->in_rows;i+=2){
+            for(j = 0;j < layer->in_columns;j+=2){
+
+                layer->out_arr[(i+k)*res_columns+j] = 0.0;
+
+                for(n=0;n<2;n++){
+                    for(m=0;m<2;m++){
+                        if(i+n>=0 && j+m>=0 && i+n<res_rows && j+m<res_columns){
+                            layer->out_arr[(i+k)*res_columns+j]+= layer->intermediate[i*layer->in_columns+j];
+                        }
+                    }
+                }
+
+                layer->out_arr[(i+k)*res_columns+j] /= 4.0;
+                
+            }
+        }
+
+        cur_mask = cur_mask->next;
+        k += res_columns*res_rows;
+    }
 }
 
 conv_mask* getConvolutionMasks(const char* conv_file, int rows, int columns)
