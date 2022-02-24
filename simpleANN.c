@@ -259,7 +259,7 @@ void exportStoredWeights(Ann* ann, int epoch, int dataSetLength, int good){
 
     //return;
 
-    snprintf(buffer, sizeof(buffer), "%s%.4d%s%.5d_%.5d.txt", ann->weights_folder, epoch, confStr, dataSetLength, good);
+    snprintf(buffer, sizeof(buffer), "%s%.4d%s%.5d_%.5d.txt", ann->weights_folder, ann->epoch+epoch, confStr, dataSetLength, good);
 
     file = fopen(buffer,"w+");
     if(file==NULL){
