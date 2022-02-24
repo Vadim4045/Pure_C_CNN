@@ -4,7 +4,6 @@
 int importStoredWeights(Ann*, const char*);
 char* getLastWeightsFileName(Ann*, const char*);
 int randomGenerateWeights(Ann* ann);
-void exportStoredWeights(Ann*, int, int, int);
 int annResult(Ann*);
 void annBP(Ann*, double);
 
@@ -15,7 +14,7 @@ Ann* newSimpleANN(int count, int* config, double alfa, const char* weightsFolder
     if(ann==NULL){
         return NULL;
     }
-
+    printf("New ANN: %d %d %d %d %d\n",count, config[0], config[1], config[2], config[3]);
     ann->configArr = config;
     ann->layersCount = count;
     ann->weights_folder = weightsFolder;
@@ -48,22 +47,13 @@ Ann* newSimpleANN(int count, int* config, double alfa, const char* weightsFolder
     return ann;
 }
 
-int simpleAnnGo(Ann* ann, double* data, double* resArr){
-    unsigned int i, j;
-    double* nextLayer;
-
-    ann->innerLayers[0]->content = data; 
+int simpleAnnGo(Ann* ann){
+    int i, j;
+    double* nextLayer; 
 
     for(i=0;i<ann->layersCount-1;i++){
         layerFP(ann->innerLayers[i]);
     }
-
-    if(resArr != NULL){
-        for(i=0;i<ann->configArr[ann->layersCount-1];i++){
-            ann->innerLayers[ann->layersCount-1]->fallacy[i] = resArr[i];
-        }
-    }
-
 
 return annResult(ann);
 }
@@ -78,31 +68,25 @@ int annResult(Ann* ann){
             idx=i;
         }
     }
-
     return idx;
 }
 
-int simpleAnnLearn(Ann* ann, double** data, int dataSetLength, double mu){
-    unsigned int i, j, tmp, good = 0;
-    
-    ann->epoch++;
+int simpleAnnLearn(Ann* ann, int res, double mu){
+    int i, j, good=0;
 
-    for(i=0;i<dataSetLength;i++){
-        tmp = checkNumber(ann, data[i] + ann->configArr[0]);
-
-        if (tmp!=-1 && simpleAnnGo(ann, data[i], &data[i][ann->configArr[0]]) == tmp){
-            good++;
-        }
-
-        for(j=0;j<ann->configArr[ann->layersCount-1];j++){
-            ann->innerLayers[ann->layersCount-1]->fallacy[j] -= ann->innerLayers[ann->layersCount-1]->content[j];
-        }
-
-        annBP(ann, mu);     
+    if (simpleAnnGo(ann) == res){
+        good++;
     }
 
-    
-    exportStoredWeights(ann, ann->epoch, dataSetLength, good);
+    for(j=0;j<ann->configArr[ann->layersCount-1];j++){
+        if(j == res){
+            ann->innerLayers[ann->layersCount-1]->fallacy[j] = 1-ann->innerLayers[ann->layersCount-1]->content[j];
+        }else{
+            ann->innerLayers[ann->layersCount-1]->fallacy[j] = -ann->innerLayers[ann->layersCount-1]->content[j];
+        }
+    }
+
+    annBP(ann, mu);   
 
     return good;
 }
@@ -184,7 +168,7 @@ char* getLastWeightsFileName(Ann* ann, const char* directory){
     int i, epoch=0;
     DIR *d;
     struct dirent *dir;
-    char confStr[32], tmp[5], tmp2[50], maxFile[50];
+    char confStr[32], tmp[7], tmp2[50], maxFile[50];
     char* weightsFileName;
 
     weightsFileName = (char*) calloc(50, sizeof(char));
@@ -200,8 +184,10 @@ char* getLastWeightsFileName(Ann* ann, const char* directory){
 
     d = opendir(directory);
     if (d) {
+        maxFile[0] = '\0';
+
         while ((dir = readdir(d)) != NULL) {
-            
+
             if(strstr(dir->d_name, confStr) != NULL && strstr(dir->d_name, ".bin") != NULL){
                 strcpy(tmp2,dir->d_name);
                 strcpy(tmp,strtok(tmp2, "_"));
@@ -215,11 +201,16 @@ char* getLastWeightsFileName(Ann* ann, const char* directory){
         closedir(d);
     }
 
-    strcat(weightsFileName, maxFile);
+    if(maxFile[0] != '\0') {
+        strcat(weightsFileName, maxFile);
 
-    ann->epoch = epoch;
+        ann->epoch = epoch;
 
-    return weightsFileName;
+        return weightsFileName;
+    }
+
+    free(weightsFileName);
+    return NULL;
 }
 
 int randomGenerateWeights(Ann* ann){
@@ -236,7 +227,7 @@ int randomGenerateWeights(Ann* ann){
 void exportStoredWeights(Ann* ann, int epoch, int dataSetLength, int good){
     unsigned int i, j, k;
     FILE *file;
-    char buffer[100], confStr[32], tmp[5];
+    char buffer[100], confStr[32], tmp[7];
     struct stat st = {0};
 
     strcpy(confStr, "_");
@@ -249,7 +240,7 @@ void exportStoredWeights(Ann* ann, int epoch, int dataSetLength, int good){
         mkdir(ann->weights_folder, 0700);
     }
 
-    snprintf(buffer, sizeof(buffer), "%s%.4d%s%.5d_%.5d.bin", ann->weights_folder, epoch, confStr, dataSetLength, good);
+    snprintf(buffer, sizeof(buffer), "%s%.4d%s%.5d_%.5d.bin", ann->weights_folder, ann->epoch+epoch, confStr, dataSetLength, good);
 
     file = fopen(buffer,"wb+");
     if(file==NULL){

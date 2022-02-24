@@ -16,12 +16,13 @@ annLayer* newLayer(int count, double alfa, int position){
     newLayer->count = count;
     newLayer->alfa=alfa;
 
+    newLayer->content = (double*) calloc(count, sizeof(double));
+    if(newLayer->content == NULL){
+        freeLayer(newLayer);
+        return NULL;
+    }
+
     if(position>0){
-        newLayer->content = (double*) calloc(count, sizeof(double));
-        if(newLayer->content == NULL){
-            freeLayer(newLayer);
-            return NULL;
-        }
 
         newLayer->fallacy = (double*) calloc(count, sizeof(double));
         if(newLayer->fallacy == NULL){
@@ -70,7 +71,6 @@ void randomWeights(annLayer* layer){
 
 void layerFP(annLayer* layer){
     int i, j;
-
     for(i=0;i<layer->next->count;i++){
         layer->next->content[i]=0;
         layer->next->fallacy[i] = 0;
@@ -79,7 +79,7 @@ void layerFP(annLayer* layer){
             layer->next->content[i] += layer->content[j] * layer->weights[i][j];
         }
 
-        layer->next->content[i] = sigma(layer->next->content[i], layer->alfa);       
+        layer->next->content[i] = sigma(layer->next->content[i], layer->alfa);    
     }
 }
 

@@ -21,8 +21,9 @@ typedef struct simpleANN
 } Ann;
 
 Ann* newSimpleANN(int, int*, double, const char*);
-int simpleAnnGo(Ann*, double*, double*);
-int simpleAnnLearn(Ann*, double**, int, double);
+int simpleAnnGo(Ann*);
+int simpleAnnLearn(Ann*, int, double);
+void exportStoredWeights(Ann*, int, int, int);
 int checkNumber(Ann*, double*);
 int freeSimpleANN(Ann*);
 
