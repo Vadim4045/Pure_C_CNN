@@ -61,7 +61,6 @@ inline void normalize(double* mat, int count){
     int i;
     double min, max;
 
-    min=mat[0];
     max=mat[0];
 
     for(i=0;i<count;i++){
@@ -70,7 +69,7 @@ inline void normalize(double* mat, int count){
     }
 
     for(i=0;i<count;i++){
-        mat[i] = (mat[i]-min)/(max-min);
+        mat[i] = mat[i]>0? mat[i]/(max-min):0;//0.001*mat[i]/(max-min);
     }
 }
 
