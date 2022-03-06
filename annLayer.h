@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <omp.h>
 
 typedef struct _annLayer
 {
@@ -21,7 +22,8 @@ typedef struct _annLayer
 annLayer* newLayer(int, double, int);
 annLayer* layerMakeContinue(annLayer*, annLayer*);
 void layerFP(annLayer*);
-void layerBP(annLayer*, double);
+void layerFPOut(annLayer*);
+void layerBP(annLayer*, double, double);
 int freeLayer(annLayer*);
 void randomWeights(annLayer*);
 

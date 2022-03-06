@@ -15,6 +15,7 @@ typedef struct _convolution_layer
     int conv_columns;
     double* masks;
     double* in_arr;
+    double* inner_arr;
     double* out_arr;
 
 }convolution_layer;

@@ -14,7 +14,7 @@ Ann* newSimpleANN(int count, int* config, double alfa, const char* weightsFolder
     if(ann==NULL){
         return NULL;
     }
-    printf("New ANN: %d %d %d %d %d\n",count, config[0], config[1], config[2], config[3]);
+    
     ann->configArr = config;
     ann->layersCount = count;
     ann->weights_folder = weightsFolder;
@@ -44,16 +44,47 @@ Ann* newSimpleANN(int count, int* config, double alfa, const char* weightsFolder
         return NULL;
     }
 
+    ann->totalFallacy = (double*) calloc(ann->configArr[ann->layersCount-1], sizeof(double));
+    if(ann->totalFallacy==NULL){
+        freeSimpleANN(ann);
+        return NULL;
+    }
+
+    ann->weightCount = 0;
+    for(i=0;i<ann->layersCount-1;i++){
+        ann->weightCount += ann->innerLayers[i]->count * ann->innerLayers[i+1]->count;
+    }
+
     return ann;
 }
 
+void zeroTotalFallacy(Ann* ann){
+    int i;
+
+    for(i=0;i<ann->configArr[ann->layersCount-1];i++){
+        ann->totalFallacy[i]=0;
+    }
+}
+
+void showTotalFallacy(Ann* ann, int num){
+    int i;
+
+    printf("Epoch totall fallacy: ");
+    for(i=0;i<ann->configArr[ann->layersCount-1];i++){
+        printf("%12.10f ", ann->totalFallacy[i]/num);
+    }
+    printf("\n");
+}
+    
 int simpleAnnGo(Ann* ann){
     int i, j;
     double* nextLayer; 
 
-    for(i=0;i<ann->layersCount-1;i++){
+    for(i=0;i<ann->layersCount-2;i++){
         layerFP(ann->innerLayers[i]);
     }
+
+    layerFPOut(ann->innerLayers[ann->layersCount-2]);
 
 return annResult(ann);
 }
@@ -72,18 +103,21 @@ int annResult(Ann* ann){
 }
 
 int simpleAnnLearn(Ann* ann, int res, double mu){
-    int i, j, good=0;
+    int j, good=0;
 
     if (simpleAnnGo(ann) == res){
         good++;
     }
 
     for(j=0;j<ann->configArr[ann->layersCount-1];j++){
+
         if(j == res){
             ann->innerLayers[ann->layersCount-1]->fallacy[j] = 1-ann->innerLayers[ann->layersCount-1]->content[j];
         }else{
             ann->innerLayers[ann->layersCount-1]->fallacy[j] = -ann->innerLayers[ann->layersCount-1]->content[j];
         }
+
+        ann->totalFallacy[j]+=ann->innerLayers[ann->layersCount-1]->fallacy[j];
     }
 
     annBP(ann, mu);   
@@ -95,7 +129,7 @@ void annBP(Ann* ann, double mu){
     int i;
     
     for(i=ann->layersCount-2;i>=0;i--){
-        layerBP(ann->innerLayers[i], mu);
+        layerBP(ann->innerLayers[i], mu, ann->weightCount);
     }
 }
 
@@ -124,6 +158,7 @@ int freeSimpleANN(Ann* ann){
         }
     }
 
+    free(ann->totalFallacy);
     free(ann->innerLayers);
     free(ann);
 

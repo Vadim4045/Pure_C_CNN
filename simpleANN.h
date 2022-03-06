@@ -17,6 +17,8 @@ typedef struct simpleANN
     int* configArr;
     annLayer** innerLayers;
     const char* weights_folder;
+    double* totalFallacy;
+    double weightCount;
     int epoch;
 } Ann;
 
@@ -25,6 +27,8 @@ int simpleAnnGo(Ann*);
 int simpleAnnLearn(Ann*, int, double);
 void exportStoredWeights(Ann*, int, int, int);
 int checkNumber(Ann*, double*);
+void zeroTotalFallacy(Ann*);
+void showTotalFallacy(Ann*,int);
 int freeSimpleANN(Ann*);
 
 #endif //H_ANN
