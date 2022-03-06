@@ -184,7 +184,7 @@ int importStoredWeights(Ann* ann, const char* directory){
 
     for(i=0;i<ann->layersCount-1;i++){
         for(j=0;j<ann->innerLayers[i]->next->count;j++){
-            for(k=0;k<ann->innerLayers[i]->count;k++){
+            for(k=0;k<=ann->innerLayers[i]->count;k++){
                 s=fread(&ann->innerLayers[i]->weights[j][k], sizeof(double), 1, file);
             }
         }
@@ -284,7 +284,7 @@ void exportStoredWeights(Ann* ann, int epoch, int dataSetLength, int good){
 
     for(i=0;i<ann->layersCount-1;i++){
         for(j=0;j<ann->innerLayers[i]->next->count;j++){
-            for(k=0;k<ann->innerLayers[i]->count;k++){
+            for(k=0;k<=ann->innerLayers[i]->count;k++){
                 fwrite(&ann->innerLayers[i]->weights[j][k], sizeof(double), 1, file);
             }
         }
@@ -303,7 +303,7 @@ void exportStoredWeights(Ann* ann, int epoch, int dataSetLength, int good){
 
     for(i=0;i<ann->layersCount-1;i++){
         for(j=0;j<ann->innerLayers[i]->next->count;j++){
-            for(k=0;k<ann->innerLayers[i]->count;k++){
+            for(k=0;k<=ann->innerLayers[i]->count;k++){
                 fprintf(file, "%f, ", ann->innerLayers[i]->weights[j][k]);
             }
         }

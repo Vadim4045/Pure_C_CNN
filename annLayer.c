@@ -47,7 +47,7 @@ annLayer* layerMakeContinue(annLayer* layer, annLayer* nextLayer){
     }
 
     for(i=0;i<nextLayer->count;i++){
-        layer->weights[i] = (double*) calloc(layer->count, sizeof(double));
+        layer->weights[i] = (double*) calloc(layer->count+1, sizeof(double));
         if(layer->weights[i]==NULL){
             freeLayer(layer);
             return NULL;
@@ -63,7 +63,7 @@ void randomWeights(annLayer* layer){
     srand(time(NULL));
 
     for(i=0;i<layer->next->count;i++){
-        for(j=0;j<layer->count;j++){
+        for(j=0;j<=layer->count;j++){
             layer->weights[i][j] = (((float)rand()/(float)RAND_MAX)-0.4)*0.1;
         }
     }
@@ -74,11 +74,11 @@ void layerFP(annLayer* layer){
 
     #pragma omp parallel for
     for(i=0;i<layer->next->count;i++){
-        layer->next->content[i]=-1;
+        layer->next->content[i]=layer->weights[i][0];
         layer->next->fallacy[i] = 0;
 
-        for(j=0;j<layer->count;j++){
-            layer->next->content[i] += layer->content[j] * layer->weights[i][j];
+        for(j=1;j<=layer->count;j++){
+            layer->next->content[i] += layer->content[j-1] * layer->weights[i][j];
         }
 
         layer->next->content[i] = sigma(layer->next->content[i], layer->alfa);    
@@ -92,11 +92,11 @@ void layerFPOut(annLayer* layer){
 
     #pragma omp parallel for
     for(i=0;i<layer->next->count;i++){
-        layer->next->content[i]=-1;
+        layer->next->content[i]=layer->weights[i][0];
         layer->next->fallacy[i] = 0;
 
-        for(j=0;j<layer->count;j++){
-            layer->next->content[i] += layer->content[j] * layer->weights[i][j];
+        for(j=1;j<=layer->count;j++){
+            layer->next->content[i] += layer->content[j-1] * layer->weights[i][j];
         }
 
         layer->next->content[i] = exp(layer->next->content[i]);
@@ -119,8 +119,8 @@ void layerBP(annLayer* layer, double mu, double wCount){
    if(layer->fallacy != NULL){
         #pragma omp parallel for num_threads(4)
         for(i=0;i<layer->next->count;i++){
-            for(j=0;j<layer->count;j++){
-                layer->fallacy[j] += layer->weights[i][j]*layer->next->fallacy[i];
+            for(j=1;j<=layer->count;j++){
+                layer->fallacy[j-1] += layer->weights[i][j]*layer->next->fallacy[i];
             }
         }
         #pragma omp barier
@@ -129,8 +129,10 @@ void layerBP(annLayer* layer, double mu, double wCount){
 
     #pragma omp parallel for
     for(i=0;i<layer->next->count;i++){
-        for(j=0;j<layer->count;j++){
-            layer->weights[i][j] = layer->weights[i][j]*(1-mu*mu/wCount) + mu*layer->next->fallacy[i]*layer->content[j]*sigmaPrime(layer->next->content[i], layer->alfa);
+        layer->weights[i][0] = layer->weights[i][0]*(1-mu*mu/wCount) + mu*layer->next->fallacy[i]*sigmaPrime(layer->next->content[i], layer->alfa);
+
+        for(j=1;j<=layer->count;j++){
+            layer->weights[i][j] = layer->weights[i][j]*(1-mu*mu/wCount) + mu*layer->next->fallacy[i]*layer->content[j-1]*sigmaPrime(layer->next->content[i], layer->alfa);
         }
     }
     #pragma omp barier
